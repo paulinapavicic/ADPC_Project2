@@ -11,15 +11,19 @@ namespace WpfAppScraper.Models
     public class GeneExpression
     {
         [BsonId]
-        public ObjectId Id { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
-        [BsonElement("PatientId")]
+        [BsonElement("patient_id")]
         public string PatientId { get; set; }
 
-        [BsonElement("CancerCohort")]
+        [BsonElement("cancer_cohort")]
         public string CancerCohort { get; set; }
 
-        [BsonElement("GeneValues")]
-        public Dictionary<string, double> GeneValues { get; set; }
+        [BsonElement("genes")]
+        public Dictionary<string, double> GeneValues { get; set; } = new();
+
+        [BsonElement("clinical_survival")]
+        public ClinicalSurvival Clinical { get; set; }
     }
 }

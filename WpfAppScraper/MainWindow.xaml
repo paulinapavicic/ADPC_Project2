@@ -6,61 +6,92 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfAppScraper" xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         mc:Ignorable="d"
-        Title="Visualizer"
-         WindowState="Maximized"
-    WindowStartupLocation="CenterScreen">
-    <TabControl>
-        <TabItem Header="Patient Analysis">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        Title="TCGA Gene Expression Pipeline"
+        Height="700" Width="1100"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <TabControl>
+            <!-- Data Import Tab -->
+            <TabItem Header="Data Import">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Button x:Name="btnDownloadData" Content="Download &amp; Process TCGA Data"
+                                Click="btnDownloadData_Click" Width="220" Height="40" Margin="0,0,12,0"/>
+                        <Button x:Name="btnImportClinical" Content="Import Clinical Data"
+                                Click="btnImportClinical_Click" Width="180" Height="40"/>
+                    </StackPanel>
+                    <TextBox x:Name="txtLog" Grid.Row="1" Height="100" Margin="0,0,0,8"
+                             IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                    <ProgressBar x:Name="progressBar" Grid.Row="2" Height="20" Minimum="0" Maximum="100"/>
+                </Grid>
+            </TabItem>
 
-                <!-- Cancer Type Dropdown for Patient Bar Chart -->
-                <ComboBox x:Name="CancerTypeDropdown" 
-                          Grid.Row="0"
-                          Margin="10"
-                          SelectionChanged="CancerTypeDropdown_SelectionChanged"/>
+            <!-- Heatmap Visualization Tab -->
+            <TabItem Header="Heatmap Visualization">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Label Content="Select Cancer Cohort:" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="HeatmapCancerTypeDropdown" Width="220" Margin="8,0"
+                                  SelectionChanged="ShowHeatmap_Click"/>
+                    </StackPanel>
+                    <oxy:PlotView x:Name="HeatmapPlot" Grid.Row="1" Height="500"/>
+                </Grid>
+            </TabItem>
 
-                <!-- Patient Dropdown -->
-                <ComboBox x:Name="PatientDropdown" 
-                          Grid.Row="1" 
-                          Margin="10" 
-                          SelectionChanged="PatientDropdown_SelectionChanged"/>
-
-                <!-- LiveCharts Chart -->
-                <lvc:CartesianChart x:Name="chart" 
-                                    Grid.Row="2" 
-                                    Series="{Binding SeriesCollection}">
-                    <lvc:CartesianChart.AxisX>
-                        <lvc:Axis Labels="{Binding Labels}"/>
-                    </lvc:CartesianChart.AxisX>
-                </lvc:CartesianChart>
-            </Grid>
-        </TabItem>
-
-        <TabItem Header="Heatmap Analysis">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Cancer Type Dropdown for Heatmap -->
-                <ComboBox x:Name="HeatmapCancerTypeDropdown" 
-                          Grid.Row="0"
-                          Margin="10"
-                          SelectionChanged="ShowHeatmap_Click"/>
-
-                <!-- OxyPlot Heatmap -->
-                <oxy:PlotView x:Name="HeatmapPlot"
-                              Grid.Row="1"
-                              Model="{Binding HeatmapModel}"
-                              Margin="10"/>
-            </Grid>
-        </TabItem>
-    </TabControl>
+            <!-- Patient Details Tab -->
+            <TabItem Header="Patient Details">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Label Content="Select Cancer Cohort:" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CancerTypeDropdown" Width="220" Margin="8,0"
+                                  SelectionChanged="CancerTypeDropdown_SelectionChanged"/>
+                        <Label Content="Select Patient:" VerticalAlignment="Center" Margin="24,0,0,0"/>
+                        <ComboBox x:Name="PatientDropdown" Width="220" Margin="8,0"
+                                  SelectionChanged="PatientDropdown_SelectionChanged"/>
+                    </StackPanel>
+                    <GroupBox Header="Clinical Data" Grid.Row="1" Margin="0,0,0,12">
+                        <Grid Margin="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="Cohort:" Grid.Column="0"/>
+                            <TextBlock x:Name="txtCohort" Grid.Column="1"/>
+                            <Label Content="Stage:" Grid.Column="2"/>
+                            <TextBlock x:Name="txtStage" Grid.Column="3"/>
+                            <Label Content="DSS:" Grid.Column="0" Grid.Row="1"/>
+                            <TextBlock x:Name="txtDSS" Grid.Column="1" Grid.Row="1"/>
+                            <Label Content="OS:" Grid.Column="2" Grid.Row="1"/>
+                            <TextBlock x:Name="txtOS" Grid.Column="3" Grid.Row="1"/>
+                        </Grid>
+                    </GroupBox>
+                    <lvc:CartesianChart x:Name="chart" Grid.Row="2" Height="300" Margin="0,0,0,0">
+                        <lvc:CartesianChart.AxisX>
+                            <lvc:Axis Title="Genes"/>
+                        </lvc:CartesianChart.AxisX>
+                        <lvc:CartesianChart.AxisY>
+                            <lvc:Axis Title="Expression Value"/>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
 
 </Window>

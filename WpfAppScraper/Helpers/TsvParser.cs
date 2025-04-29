@@ -103,7 +103,8 @@ namespace WpfAppScraper.Helpers
 
                 while (csv.Read())
                 {
-                    var patientId = csv.GetField("bcr_patient_barcode");
+                    var patientId = csv.GetField("bcr_patient_barcode")?.Trim().ToUpper();
+
 
                     if (!string.IsNullOrEmpty(patientId))
                     {

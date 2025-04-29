@@ -223,13 +223,19 @@ namespace WpfAppScraper
                     int matchedRecords = 0;
                     foreach (var expression in _geneExpressions)
                     {
-                        // Extract base patient ID (TCGA-XX-XXXX)
-                        var basePatientId = string.Join("-", expression.PatientId.Split('-').Take(3));
+                       
+                        // New: use full sample barcode (TCGA-OR-A5J1-01)
+                        var basePatientId = expression.PatientId.Trim().ToUpper();
+
 
                         if (clinicalData.TryGetValue(basePatientId, out var clinical))
                         {
                             expression.Clinical = clinical;
                             matchedRecords++;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"No clinical match for {basePatientId}");
                         }
                     }
                     txtLog.AppendText($"Matched clinical data for {matchedRecords} patients\n");

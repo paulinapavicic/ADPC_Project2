@@ -172,26 +172,19 @@ namespace WpfAppScraper
             try
             {
                 SetUIState(false);
-                txtLog.AppendText("Starting download...\n");
-                // Use direct Xena file URLs here!
+                txtLog.AppendText("Starting scraping and download...\n");
+
                 var xenaService = new XenaDataService();
-                var minioService = new MinioService(Constraints.ENDPOINT,
-                                            Constraints.ACCESS_KEY,
-                                            Constraints.SECRET_KEY,
-                                            Constraints.BucketName);
-                var datasets = await xenaService.GetDatasetUrlsAsync();
-                progressBar.Maximum = datasets.Count;
-                progressBar.Value = 0;
 
-                foreach (var (url, cohort) in datasets)
-                {
-                    using var stream = await xenaService.DownloadDatasetAsync(url);
-                    await minioService.UploadFileAsync($"{cohort}.tsv.gz", stream);
-                    progressBar.Value++;
-                    txtLog.AppendText($"Processed {cohort}\n");
-                }
+                // 1. Scrape Xena, download files, and upload to MinIO
+                await xenaService.ScrapeAndDownloadFilesAsync();
+                txtLog.AppendText("Files downloaded and uploaded to MinIO.\n");
 
-                // Enable tabs
+                // 2. Process files from MinIO and insert into MongoDB
+                await xenaService.ProcessFilesFromMinIO();
+                txtLog.AppendText("Files processed and loaded into MongoDB.\n");
+
+                // 3. Enable visualization tabs
                 tabHeatmap.IsEnabled = true;
                 tabPatient.IsEnabled = true;
                 txtLog.AppendText("Data loaded. Visualization tabs are now enabled.\n");
@@ -278,6 +271,8 @@ namespace WpfAppScraper
                 MessageBox.Show("Please select a cancer type.");
                 return;
             }
+            // Limit the number of patients to display for readability
+            int maxPatients = 50;
 
             var patients = _cancerToPatientsMap[selectedCancerType];
             if (patients.Count == 0) return;
@@ -296,35 +291,45 @@ namespace WpfAppScraper
                 }
             }
 
-            HeatmapModel = new PlotModel { Title = $"Gene Expression Heatmap - {selectedCancerType}" };
-            HeatmapModel.Axes.Add(new CategoryAxis
-            {
-                Position = AxisPosition.Left,
-                ItemsSource = genes,
-                Key = "Genes"
-            });
-            HeatmapModel.Axes.Add(new CategoryAxis
-            {
-                Position = AxisPosition.Bottom,
-                ItemsSource = patients,
-                Key = "Patients",
-                LabelField = "PatientId",
-                Angle = -45,
-                IsZoomEnabled = false
-            });
-            var heatmapSeries = new HeatMapSeries
-            {
-                X0 = 0,
-                X1 = patients.Count - 1,
-                Y0 = 0,
-                Y1 = genes.Count - 1,
-                Data = matrix,
-                Interpolate = false,
-                RenderMethod = HeatMapRenderMethod.Rectangles
-            };
-            HeatmapModel.Series.Clear();
-            HeatmapModel.Series.Add(heatmapSeries);
-            HeatmapPlot.Model = HeatmapModel;
+           HeatmapModel = new PlotModel { Title = $"Gene Expression Heatmap - {selectedCancerType}" };
+HeatmapModel.Axes.Add(new CategoryAxis
+{
+    Position = AxisPosition.Left,
+    ItemsSource = genes,
+    Key = "Genes"
+});
+HeatmapModel.Axes.Add(new CategoryAxis
+{
+    Position = AxisPosition.Bottom,
+    ItemsSource = patients,
+    Key = "Patients",
+    Angle = -45,
+    IsZoomEnabled = true,
+      // Show only every 5th patient label for clarity
+        GapWidth = 0,
+    MajorStep = 5
+});
+// ADD THIS: Color axis for the heatmap
+HeatmapModel.Axes.Add(new LinearColorAxis
+{
+    Position = AxisPosition.Right,
+    Palette = OxyPalettes.Jet(200), // or choose another palette
+    Title = "Expression"
+});
+var heatmapSeries = new HeatMapSeries
+{
+    X0 = 0,
+    X1 = patients.Count - 1,
+    Y0 = 0,
+    Y1 = genes.Count - 1,
+    Data = matrix,
+    Interpolate = false,
+    RenderMethod = HeatMapRenderMethod.Rectangles
+};
+HeatmapModel.Series.Clear();
+HeatmapModel.Series.Add(heatmapSeries);
+HeatmapPlot.Model = HeatmapModel;
+
 
 
         }

@@ -30,6 +30,7 @@ using AxisPosition = OxyPlot.Axes.AxisPosition;
 using Microsoft.Win32;
 using WpfAppScraper.Helpers;
 using WpfAppScraper.Models.Constraints;
+using MongoDB.Bson;
 
 namespace WpfAppScraper
 {
@@ -49,24 +50,9 @@ namespace WpfAppScraper
         public MainWindow()
         {
             InitializeComponent();
-            // Hide MainWindow until StartupChoiceWindow is done
-            this.Visibility = Visibility.Hidden;
 
-            var startupWindow = new StartupChoiceWindow
-            {
-                Owner = this, // Optional: centers dialog over MainWindow
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            var result = startupWindow.ShowDialog();
-
-            if (result != true)
-            {
-                // User cancelled or closed the dialog, exit app
-                Application.Current.Shutdown();
-                return;
-            }
-
-            this.Visibility = Visibility.Visible;
+          /*  tabHeatmap.IsEnabled = false;
+            tabPatient.IsEnabled = false;*/
 
             _mongoService = new MongoService();
             _cancerToPatientsMap = new Dictionary<string, List<string>>();
@@ -76,6 +62,26 @@ namespace WpfAppScraper
             DataContext = this;
             LoadData();
         }
+
+       /* private async void btnTestMongoInsert_Click(object sender, RoutedEventArgs e)
+        {
+            var client = new MongoClient("mongodb+srv://ppavicic:Bax1407pp@cluster0.un5ewq6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
+            var db = client.GetDatabase("GeneExpressionDB");
+            var collection = db.GetCollection<BsonDocument>("GeneExpressions");
+
+            var document = new BsonDocument
+    {
+        { "Brand", "Dell" },
+        { "Price", "400" },
+        { "Ram", "8GB" },
+        { "HardDisk", "1TB" },
+        { "Screen", "16inch" }
+    };
+
+            await collection.InsertOneAsync(document);
+            MessageBox.Show("Document inserted!");
+        }*/
+
 
         private async void LoadData()
         {
@@ -166,16 +172,16 @@ namespace WpfAppScraper
             try
             {
                 SetUIState(false);
+                txtLog.AppendText("Starting download...\n");
+                // Use direct Xena file URLs here!
                 var xenaService = new XenaDataService();
                 var minioService = new MinioService(Constraints.ENDPOINT,
-                                                  Constraints.ACCESS_KEY,
-                                                  Constraints.SECRET_KEY,
-                                                  Constraints.BucketName);
-
-                // Your download and processing logic here
-                // Example:
+                                            Constraints.ACCESS_KEY,
+                                            Constraints.SECRET_KEY,
+                                            Constraints.BucketName);
                 var datasets = await xenaService.GetDatasetUrlsAsync();
                 progressBar.Maximum = datasets.Count;
+                progressBar.Value = 0;
 
                 foreach (var (url, cohort) in datasets)
                 {
@@ -184,6 +190,11 @@ namespace WpfAppScraper
                     progressBar.Value++;
                     txtLog.AppendText($"Processed {cohort}\n");
                 }
+
+                // Enable tabs
+                tabHeatmap.IsEnabled = true;
+                tabPatient.IsEnabled = true;
+                txtLog.AppendText("Data loaded. Visualization tabs are now enabled.\n");
             }
             catch (Exception ex)
             {
@@ -194,6 +205,7 @@ namespace WpfAppScraper
                 SetUIState(true);
             }
         }
+
 
         private async void btnImportClinical_Click(object sender, RoutedEventArgs e)
         {

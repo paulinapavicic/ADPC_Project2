@@ -12,5 +12,6 @@ namespace WpfAppScraper.Models.Constraints
         public const string ACCESS_KEY = "admin";
         public const string SECRET_KEY = "admin123";
         public const string BucketName = "scraper";
+        public const string ClinicalBucketName = "clinical";
     }
 }

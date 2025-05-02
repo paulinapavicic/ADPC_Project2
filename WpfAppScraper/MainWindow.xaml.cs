@@ -63,25 +63,7 @@ namespace WpfAppScraper
             LoadData();
         }
 
-       /* private async void btnTestMongoInsert_Click(object sender, RoutedEventArgs e)
-        {
-            var client = new MongoClient("mongodb+srv://ppavicic:Bax1407pp@cluster0.un5ewq6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
-            var db = client.GetDatabase("GeneExpressionDB");
-            var collection = db.GetCollection<BsonDocument>("GeneExpressions");
-
-            var document = new BsonDocument
-    {
-        { "Brand", "Dell" },
-        { "Price", "400" },
-        { "Ram", "8GB" },
-        { "HardDisk", "1TB" },
-        { "Screen", "16inch" }
-    };
-
-            await collection.InsertOneAsync(document);
-            MessageBox.Show("Document inserted!");
-        }*/
-
+       
 
         private async void LoadData()
         {
@@ -159,13 +141,37 @@ namespace WpfAppScraper
             if (patient == null) return;
 
             txtCohort.Text = patient.CancerCohort;
-            txtStage.Text = patient.Clinical?.ClinicalStage ?? "Unknown";
-            txtDSS.Text = patient.Clinical?.DiseaseSpecificSurvival.HasValue == true
-                ? (patient.Clinical.DiseaseSpecificSurvival.Value == 1 ? "Survived" : "Did not survive")
-                : "Unknown";
-            txtOS.Text = patient.Clinical?.OverallSurvival.HasValue == true
-                ? (patient.Clinical.OverallSurvival.Value == 1 ? "Survived" : "Did not survive")
-                : "Unknown";
+
+            if (patient.Clinical== null)
+            {
+                txtStage.Text = "Unknown";
+                txtDSS.Text = "Unknown";
+                txtOS.Text = "Unknown";
+                Console.WriteLine($"No clinical data for {patient.PatientId}");
+            }
+            else
+            {
+                txtStage.Text = string.IsNullOrWhiteSpace(patient.Clinical.ClinicalStage)
+                    ? "Unknown"
+                    : patient.Clinical.ClinicalStage;
+
+                txtDSS.Text = patient.Clinical.DiseaseSpecificSurvival switch
+                {
+                    1 => "Survived",
+                    0 => "Did not survive",
+                    _ => "Unknown"
+                };
+
+                txtOS.Text = patient.Clinical.OverallSurvival switch
+                {
+                    1 => "Survived",
+                    0 => "Did not survive",
+                    _ => "Unknown"
+                };
+
+                Console.WriteLine($"Clinical for {patient.PatientId}: DSS={patient.Clinical.DiseaseSpecificSurvival}, OS={patient.Clinical.OverallSurvival}, Stage={patient.Clinical.ClinicalStage}");
+            }
+
         }
         private async void btnDownloadData_Click(object sender, RoutedEventArgs e)
         {
@@ -339,5 +345,60 @@ HeatmapPlot.Model = HeatmapModel;
 
 
         }
+
+        //scraping clinical data
+        private async void btnClinicalData_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetUIState(false);
+                txtLog.AppendText("Starting clinical data scraping and download...\n");
+
+                var clinicalParser = new ClinicalParser();
+
+                // 1. Scrape Xena, download clinical files, and upload to MinIO clinical bucket
+                await clinicalParser.ScrapeAndDownloadClinicalFilesAsync();
+                txtLog.AppendText("Clinical files downloaded and uploaded to MinIO clinical bucket.\n");
+
+                
+
+                txtLog.AppendText("Clinical data scraping complete.\n");
+            }
+            catch (Exception ex)
+            {
+                txtLog.AppendText($"Error: {ex.Message}\n");
+            }
+            finally
+            {
+                SetUIState(true);
+            }
+        }
+
+
+        //scraping clinical data
+        private async void btnMergeClinical_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetUIState(false);
+                txtLog.AppendText("Starting clinical data merge...\n");
+
+                var clinicalParser = new ClinicalParser();
+                await clinicalParser.MergeClinicalWithGeneExpressionAsync(_mongoService);
+
+                txtLog.AppendText("Clinical data merged with gene expression data in MongoDB.\n");
+            }
+            catch (Exception ex)
+            {
+                txtLog.AppendText($"Error: {ex.Message}\n");
+            }
+            finally
+            {
+                SetUIState(true);
+            }
+        }
+
+
+
     }
 }

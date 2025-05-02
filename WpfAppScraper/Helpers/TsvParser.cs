@@ -21,6 +21,9 @@ namespace WpfAppScraper.Helpers
             "NFKB1", "IKBKE", "IRF3", "TREX1", "ATM", "IL6", "IL8"
         };
 
+        /// <summary>
+        /// Parses a gzipped gene expression TSV file from a stream.
+        /// </summary>
         public static List<GeneExpression> ParseGeneExpressions(Stream gzipStream, string cohortName)
         {
             var patientExpressions = new Dictionary<string, GeneExpression>();
@@ -35,27 +38,22 @@ namespace WpfAppScraper.Helpers
                     BadDataFound = null
                 });
 
-                // Read header
                 csv.Read();
                 csv.ReadHeader();
 
-                // Get patient IDs from header (skip first column which is gene name)
-                var patientIds = csv.HeaderRecord.Skip(1).ToList();
+                var patientIds = csv.HeaderRecord.Skip(1).Select(id => id?.Trim().ToUpper()).ToList();
 
-                // Process each gene row
                 while (csv.Read())
                 {
                     var geneName = csv.GetField<string>(0);
 
-                    // Check if this is one of our target genes
                     if (TargetGenes.Contains(geneName))
                     {
-                        // Process expression values for each patient
                         for (int i = 0; i < patientIds.Count; i++)
                         {
                             var patientId = patientIds[i];
+                            if (string.IsNullOrEmpty(patientId)) continue;
 
-                            // Create patient record if it doesn't exist
                             if (!patientExpressions.ContainsKey(patientId))
                             {
                                 patientExpressions[patientId] = new GeneExpression
@@ -66,8 +64,7 @@ namespace WpfAppScraper.Helpers
                                 };
                             }
 
-                            // Add this gene's expression value
-                            if (double.TryParse(csv.GetField(i + 1), out var value))
+                            if (double.TryParse(csv.GetField(i + 1), NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
                             {
                                 patientExpressions[patientId].GeneValues[geneName] = value;
                             }
@@ -85,6 +82,9 @@ namespace WpfAppScraper.Helpers
             }
         }
 
+        /// <summary>
+        /// Parses a clinical/survival TXT file, supporting "sample", "bcr_patient_barcode", or row name as barcode.
+        /// </summary>
         public static Dictionary<string, ClinicalSurvival> ParseClinicalData(string filePath)
         {
             var clinicalData = new Dictionary<string, ClinicalSurvival>();
@@ -101,21 +101,35 @@ namespace WpfAppScraper.Helpers
                 csv.Read();
                 csv.ReadHeader();
 
+                // Determine which column to use for barcode
+                int colBarcode = -1;
+                if (csv.HeaderRecord.Contains("sample"))
+                    colBarcode = csv.GetFieldIndex("sample");
+                else if (csv.HeaderRecord.Contains("bcr_patient_barcode"))
+                    colBarcode = csv.GetFieldIndex("bcr_patient_barcode");
+                else
+                    colBarcode = 0; // fallback to first column (row name)
+
+                int colDSS = csv.GetFieldIndex("DSS", isTryGet: true);
+                int colOS = csv.GetFieldIndex("OS", isTryGet: true);
+                int colStage = csv.GetFieldIndex("clinical_stage", isTryGet: true);
+
                 while (csv.Read())
                 {
-                    var patientId = csv.GetField("bcr_patient_barcode")?.Trim().ToUpper();
+                    var patientId = csv.GetField(colBarcode)?.Trim().ToUpper();
+                    if (string.IsNullOrEmpty(patientId)) continue;
 
+                    int? dss = colDSS >= 0 ? ParseNullableInt(csv.GetField(colDSS)) : null;
+                    int? os = colOS >= 0 ? ParseNullableInt(csv.GetField(colOS)) : null;
+                    string stage = colStage >= 0 ? csv.GetField(colStage) : null;
 
-                    if (!string.IsNullOrEmpty(patientId))
+                    clinicalData[patientId] = new ClinicalSurvival
                     {
-                        clinicalData[patientId] = new ClinicalSurvival
-                        {
-                            PatientId = patientId,
-                            DiseaseSpecificSurvival = ParseNullableInt(csv.GetField("DSS")),
-                            OverallSurvival = ParseNullableInt(csv.GetField("OS")),
-                            ClinicalStage = csv.GetField("clinical_stage") ?? "Unknown"
-                        };
-                    }
+                        PatientId = patientId,
+                        DiseaseSpecificSurvival = dss,
+                        OverallSurvival = os,
+                        ClinicalStage = stage
+                    };
                 }
 
                 Console.WriteLine($"Parsed {clinicalData.Count} clinical records");
@@ -131,11 +145,11 @@ namespace WpfAppScraper.Helpers
         private static int? ParseNullableInt(string value)
         {
             if (int.TryParse(value, out var result))
-            {
                 return result;
-            }
+            if (double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return (int)d;
             return null;
         }
-    
-}
+
+    }
 }

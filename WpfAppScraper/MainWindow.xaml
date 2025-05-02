@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfAppScraper" xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         mc:Ignorable="d"
-        Title="TCGA Gene Expression Pipeline"
+        Title="TCGA Gene Expression "
         Height="700" Width="1100"
         WindowStartupLocation="CenterScreen">
     <Grid>
@@ -26,8 +26,14 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16" Grid.ColumnSpan="2">
                         <Button x:Name="btnDownloadData" Content="Download &amp; Process TCGA Data"
                                 Click="btnDownloadData_Click" Width="220" Height="40" Margin="0,0,12,0"/>
-                        <Button x:Name="btnImportClinical" Content="Import Clinical Data"
-                                Click="btnImportClinical_Click" Width="180" Height="40"/>
+                        <Button x:Name="btnImportClinical" Content="Import gene expression files"
+                                Click="btnImportClinical_Click" Width="180" Height="40"  Margin="0,0,12,0"/>
+                        <Button x:Name="btnClinicalData" Content="Scrape Clinical data"
+                                Click="btnClinicalData_Click" Width="200" Height="40" Margin="0,0,12,0"/>
+
+                        <Button x:Name="btnMergeClinical" Content="Merge Clinical data"
+                                Click="btnMergeClinical_Click" Width="200" Height="40" Margin="0,0,12,0"/>
+
 
 
                     </StackPanel>

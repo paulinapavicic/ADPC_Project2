@@ -42,9 +42,9 @@ namespace WpfAppScraper.Services
             Directory.CreateDirectory(downloadDirectory);
         }
 
-        /// <summary>
-        /// Scrape Xena, download IlluminaHiSeq pancan normalized files, upload to MinIO.
-        /// </summary>
+        
+        // Scrape Xena, download IlluminaHiSeq pancan normalized files, upload to MinIO.
+        
         public async Task ScrapeAndDownloadFilesAsync()
         {
             await ClearBucketAsync();
@@ -126,9 +126,9 @@ namespace WpfAppScraper.Services
             }
         }
 
-        /// <summary>
-        /// Process files from MinIO: decompress, parse, and insert into MongoDB.
-        /// </summary>
+       
+        // Process files from MinIO: decompress, parse, and insert into MongoDB.
+        
         public async Task ProcessFilesFromMinIO()
         {
             var fileUrls = await ListFilesInMinIO();

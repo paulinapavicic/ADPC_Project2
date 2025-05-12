@@ -21,9 +21,9 @@ namespace WpfAppScraper.Helpers
             "NFKB1", "IKBKE", "IRF3", "TREX1", "ATM", "IL6", "IL8"
         };
 
-        /// <summary>
-        /// Parses a gzipped gene expression TSV file from a stream.
-        /// </summary>
+      
+        //Parses a gzipped gene expression TSV file from a stream.
+     
         public static List<GeneExpression> ParseGeneExpressions(Stream gzipStream, string cohortName)
         {
             var patientExpressions = new Dictionary<string, GeneExpression>();
@@ -82,9 +82,7 @@ namespace WpfAppScraper.Helpers
             }
         }
 
-        /// <summary>
-        /// Parses a clinical/survival TXT file, supporting "sample", "bcr_patient_barcode", or row name as barcode.
-        /// </summary>
+       
         public static Dictionary<string, ClinicalSurvival> ParseClinicalData(string filePath)
         {
             var clinicalData = new Dictionary<string, ClinicalSurvival>();
@@ -101,14 +99,14 @@ namespace WpfAppScraper.Helpers
                 csv.Read();
                 csv.ReadHeader();
 
-                // Determine which column to use for barcode
+               
                 int colBarcode = -1;
                 if (csv.HeaderRecord.Contains("sample"))
                     colBarcode = csv.GetFieldIndex("sample");
                 else if (csv.HeaderRecord.Contains("bcr_patient_barcode"))
                     colBarcode = csv.GetFieldIndex("bcr_patient_barcode");
                 else
-                    colBarcode = 0; // fallback to first column (row name)
+                    colBarcode = 0; 
 
                 int colDSS = csv.GetFieldIndex("DSS", isTryGet: true);
                 int colOS = csv.GetFieldIndex("OS", isTryGet: true);

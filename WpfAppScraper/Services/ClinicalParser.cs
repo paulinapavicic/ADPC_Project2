@@ -52,7 +52,7 @@ namespace WpfAppScraper.Services
                 driver.Navigate().GoToUrl(mainUrl);
                 await Task.Delay(5000);
 
-                // Find all cohort links
+                
                 var cohortLinks = driver.FindElements(By.XPath("//a[contains(@href, 'cohort=TCGA')]"));
                 var cohortUrls = cohortLinks.Select(el => el.GetAttribute("href")).ToList();
 
@@ -69,11 +69,11 @@ namespace WpfAppScraper.Services
                         continue;
                     }
 
-                    // Click the first "Curated survival data" link
+                   
                     survivalLinks[0].Click();
                     await Task.Delay(3000);
 
-                    // Now on the dataset details page, find the download link for the .txt file
+                   
                     var downloadLinks = driver.FindElements(By.XPath("//a[contains(@href, '.txt')]"));
                     if (downloadLinks.Count == 0)
                     {
@@ -94,7 +94,7 @@ namespace WpfAppScraper.Services
                     }
                     Console.WriteLine($"Downloaded and uploaded: {fileName}");
 
-                    // Go back to the cohort page for the next iteration
+                    
                     driver.Navigate().Back();
                     await Task.Delay(2000);
                 }
@@ -102,13 +102,13 @@ namespace WpfAppScraper.Services
         }
 
 
-        // 2. Merge clinical data with gene expression data in MongoDB
+        // Merge clinical data with gene expression data in MongoDB
         public async Task MergeClinicalWithGeneExpressionAsync(MongoService mongoService)
         {
-            // List all clinical .txt files in MinIO
+            
             var clinicalFileNames = await ListClinicalFilesInMinIO();
 
-            // Parse and merge all clinical data
+          
             var allClinicalDicts = new List<Dictionary<string, ClinicalSurvival>>();
             foreach (var fileName in clinicalFileNames)
             {
@@ -121,16 +121,16 @@ namespace WpfAppScraper.Services
             {
                 foreach (var kvp in dict)
                 {
-                    // Overwrite if duplicate, or keep first occurrence if you prefer
+                    
                     mergedClinicalDict[kvp.Key] = kvp.Value;
                 }
             }
 
 
-            // Get all gene expression docs from MongoDB
+            
             var allGeneExpr = await mongoService.GetGeneExpressionsAsync();
 
-            // Join and update
+       
             foreach (var expr in allGeneExpr)
             {
                 var barcode = expr.PatientId.Trim().ToUpper();
@@ -160,7 +160,7 @@ namespace WpfAppScraper.Services
         {
             string objectName = Path.GetFileName(filePath);
             await _minioClient.PutObjectAsync(new PutObjectArgs()
-                .WithBucket(_bucketName) // Use clinical bucket here!
+                .WithBucket(_bucketName) 
                 .WithObject(objectName)
                 .WithFileName(filePath)
                 .WithObjectSize(new FileInfo(filePath).Length)

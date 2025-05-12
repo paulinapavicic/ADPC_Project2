@@ -34,9 +34,7 @@ using MongoDB.Bson;
 
 namespace WpfAppScraper
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
+    
     public partial class MainWindow : Window
     {
         private readonly MongoService _mongoService;
@@ -51,8 +49,7 @@ namespace WpfAppScraper
         {
             InitializeComponent();
 
-          /*  tabHeatmap.IsEnabled = false;
-            tabPatient.IsEnabled = false;*/
+          
 
             _mongoService = new MongoService();
             _cancerToPatientsMap = new Dictionary<string, List<string>>();
@@ -71,7 +68,7 @@ namespace WpfAppScraper
             {
                 _geneExpressions = await _mongoService.GetGeneExpressionsAsync();
 
-                // Group patients by cancer cohort
+                
                 _cancerToPatientsMap = _geneExpressions
                     .GroupBy(g => g.CancerCohort)
                     .ToDictionary(
@@ -79,11 +76,11 @@ namespace WpfAppScraper
                         g => g.Select(e => e.PatientId).Distinct().ToList()
                     );
 
-                // Populate dropdowns
+                
                 CancerTypeDropdown.ItemsSource = _cancerToPatientsMap.Keys.ToList();
                 HeatmapCancerTypeDropdown.ItemsSource = _cancerToPatientsMap.Keys.ToList();
 
-                // Optionally select the first cohort
+                
                 if (CancerTypeDropdown.Items.Count > 0)
                     CancerTypeDropdown.SelectedIndex = 0;
                 if (HeatmapCancerTypeDropdown.Items.Count > 0)
@@ -182,15 +179,15 @@ namespace WpfAppScraper
 
                 var xenaService = new XenaDataService();
 
-                // 1. Scrape Xena, download files, and upload to MinIO
+                
                 await xenaService.ScrapeAndDownloadFilesAsync();
                 txtLog.AppendText("Files downloaded and uploaded to MinIO.\n");
 
-                // 2. Process files from MinIO and insert into MongoDB
+                
                 await xenaService.ProcessFilesFromMinIO();
                 txtLog.AppendText("Files processed and loaded into MongoDB.\n");
 
-                // 3. Enable visualization tabs
+                
                 tabHeatmap.IsEnabled = true;
                 tabPatient.IsEnabled = true;
                 txtLog.AppendText("Data loaded. Visualization tabs are now enabled.\n");
@@ -210,7 +207,7 @@ namespace WpfAppScraper
         {
             var openDialog = new OpenFileDialog
             {
-                Filter = "TSV Files (*.tsv)|*.tsv",
+                Filter = "Tab-Delimited Files (*.tsv;*.txt)|*.tsv;*.txt",
                 Title = "Select Clinical Survival Data File"
             };
 
@@ -221,16 +218,16 @@ namespace WpfAppScraper
                     SetUIState(false);
                     txtLog.AppendText("Starting clinical data import...\n");
 
-                    // 1. Parse clinical data
+                    
                     var clinicalData = TsvParser.ParseClinicalData(openDialog.FileName);
                     txtLog.AppendText($"Parsed {clinicalData.Count} clinical records\n");
 
-                    // 2. Merge with existing gene expressions
+                    
                     int matchedRecords = 0;
                     foreach (var expression in _geneExpressions)
                     {
                        
-                        // New: use full sample barcode (TCGA-OR-A5J1-01)
+                        
                         var basePatientId = expression.PatientId.Trim().ToUpper();
 
 
@@ -246,11 +243,11 @@ namespace WpfAppScraper
                     }
                     txtLog.AppendText($"Matched clinical data for {matchedRecords} patients\n");
 
-                    // 3. Update MongoDB
+                 
                     await _mongoService.UpdateClinicalDataAsync(_geneExpressions);
                     txtLog.AppendText("Successfully updated clinical data in database\n");
 
-                    // 4. Refresh UI
+                    
                     if (PatientDropdown.SelectedItem != null)
                     {
                         UpdateClinicalInfo(PatientDropdown.SelectedItem.ToString());
@@ -321,11 +318,11 @@ HeatmapModel.Axes.Add(new CategoryAxis
         GapWidth = 0,
     MajorStep = 5
 });
-// ADD THIS: Color axis for the heatmap
+
 HeatmapModel.Axes.Add(new LinearColorAxis
 {
     Position = AxisPosition.Right,
-    Palette = OxyPalettes.Jet(200), // or choose another palette
+    Palette = OxyPalettes.Jet(200), 
     Title = "Expression"
 });
 var heatmapSeries = new HeatMapSeries
@@ -356,7 +353,7 @@ HeatmapPlot.Model = HeatmapModel;
 
                 var clinicalParser = new ClinicalParser();
 
-                // 1. Scrape Xena, download clinical files, and upload to MinIO clinical bucket
+                // Scrape Xena, download clinical files, and upload to MinIO clinical bucket
                 await clinicalParser.ScrapeAndDownloadClinicalFilesAsync();
                 txtLog.AppendText("Clinical files downloaded and uploaded to MinIO clinical bucket.\n");
 
@@ -375,7 +372,7 @@ HeatmapPlot.Model = HeatmapModel;
         }
 
 
-        //scraping clinical data
+        
         private async void btnMergeClinical_Click(object sender, RoutedEventArgs e)
         {
             try

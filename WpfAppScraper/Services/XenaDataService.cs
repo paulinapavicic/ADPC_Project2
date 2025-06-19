@@ -127,7 +127,7 @@ namespace WpfAppScraper.Services
         }
 
        
-        // Process files from MinIO: decompress, parse, and insert into MongoDB.
+       
         
         public async Task ProcessFilesFromMinIO()
         {
@@ -161,7 +161,7 @@ namespace WpfAppScraper.Services
 
             memoryStream.Position = 0;
 
-            // Decompress GZip
+            
             var decompressedStream = new MemoryStream();
             using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Decompress))
             {

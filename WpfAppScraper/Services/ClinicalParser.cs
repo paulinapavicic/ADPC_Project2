@@ -61,7 +61,7 @@ namespace WpfAppScraper.Services
                     driver.Navigate().GoToUrl(cohortUrl);
                     await Task.Delay(3000);
 
-                    // Find "Curated survival data" link
+                   
                     var survivalLinks = driver.FindElements(By.XPath("//a[contains(text(), 'Curated survival data')]"));
                     if (survivalLinks.Count == 0)
                     {

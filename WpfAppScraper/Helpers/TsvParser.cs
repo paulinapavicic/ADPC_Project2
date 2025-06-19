@@ -14,7 +14,7 @@ namespace WpfAppScraper.Helpers
 {
     public class TsvParser
     {
-        // Target genes as specified in requirements
+        
         private static readonly HashSet<string> TargetGenes = new()
         {
             "C6orf150", "CCL5", "CXCL10", "TMEM173", "CXCL9", "CXCL11",

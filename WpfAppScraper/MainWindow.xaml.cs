@@ -280,7 +280,7 @@ namespace WpfAppScraper
                 MessageBox.Show("Please select a cancer type.");
                 return;
             }
-            // Limit the number of patients to display for readability
+            
             int maxPatients = 50;
 
             var patients = _cancerToPatientsMap[selectedCancerType];
@@ -314,7 +314,7 @@ HeatmapModel.Axes.Add(new CategoryAxis
     Key = "Patients",
     Angle = -45,
     IsZoomEnabled = true,
-      // Show only every 5th patient label for clarity
+      
         GapWidth = 0,
     MajorStep = 5
 });
@@ -343,7 +343,7 @@ HeatmapPlot.Model = HeatmapModel;
 
         }
 
-        //scraping clinical data
+        
         private async void btnClinicalData_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -353,7 +353,7 @@ HeatmapPlot.Model = HeatmapModel;
 
                 var clinicalParser = new ClinicalParser();
 
-                // Scrape Xena, download clinical files, and upload to MinIO clinical bucket
+             
                 await clinicalParser.ScrapeAndDownloadClinicalFilesAsync();
                 txtLog.AppendText("Clinical files downloaded and uploaded to MinIO clinical bucket.\n");
 

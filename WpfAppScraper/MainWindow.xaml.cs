@@ -148,6 +148,8 @@ namespace WpfAppScraper
             }
             else
             {
+                
+
                 txtStage.Text = string.IsNullOrWhiteSpace(patient.Clinical.ClinicalStage)
                     ? "Unknown"
                     : patient.Clinical.ClinicalStage;
@@ -349,17 +351,20 @@ HeatmapPlot.Model = HeatmapModel;
             try
             {
                 SetUIState(false);
-                txtLog.AppendText("Starting clinical data scraping and download...\n");
+                txtLog.AppendText("Select consolidated clinical file...\n");
 
-                var clinicalParser = new ClinicalParser();
+                var openDialog = new OpenFileDialog
+                {
+                    Filter = "TSV Files (*.tsv)|*.tsv",
+                    Title = "Select TCGA_clinical_survival_data.tsv"
+                };
 
-             
-                await clinicalParser.ScrapeAndDownloadClinicalFilesAsync();
-                txtLog.AppendText("Clinical files downloaded and uploaded to MinIO clinical bucket.\n");
-
-                
-
-                txtLog.AppendText("Clinical data scraping complete.\n");
+                if (openDialog.ShowDialog() == true)
+                {
+                    var clinicalParser = new ClinicalParser();
+                    await clinicalParser.UploadConsolidatedClinicalFileAsync(openDialog.FileName);
+                    txtLog.AppendText("Consolidated clinical file uploaded to MinIO.\n");
+                }
             }
             catch (Exception ex)
             {

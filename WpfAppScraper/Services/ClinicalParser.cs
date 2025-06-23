@@ -23,7 +23,7 @@ namespace WpfAppScraper.Services
 {
     public  class ClinicalParser
     {
-        private readonly string mainUrl = "https://xenabrowser.net/datapages/?hub=https://tcga.xenahubs.net:443";
+       
         private readonly string downloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ClinicalFiles");
         private readonly IMinioClient _minioClient;
         private readonly string _bucketName = Constraints.ClinicalBucketName;
@@ -40,127 +40,50 @@ namespace WpfAppScraper.Services
             Directory.CreateDirectory(downloadDirectory);
         }
 
-       
 
 
-        public async Task ScrapeAndDownloadClinicalFilesAsync()
+
+        public async Task UploadConsolidatedClinicalFileAsync(string localFilePath)
         {
             await ClearBucketAsync();
-
-            using (IWebDriver driver = new ChromeDriver())
-            {
-                driver.Navigate().GoToUrl(mainUrl);
-                await Task.Delay(5000);
-
-                
-                var cohortLinks = driver.FindElements(By.XPath("//a[contains(@href, 'cohort=TCGA')]"));
-                var cohortUrls = cohortLinks.Select(el => el.GetAttribute("href")).ToList();
-
-                foreach (var cohortUrl in cohortUrls)
-                {
-                    driver.Navigate().GoToUrl(cohortUrl);
-                    await Task.Delay(3000);
-
-                   
-                    var survivalLinks = driver.FindElements(By.XPath("//a[contains(text(), 'Curated survival data')]"));
-                    if (survivalLinks.Count == 0)
-                    {
-                        Console.WriteLine($"No curated survival data for cohort: {cohortUrl}");
-                        continue;
-                    }
-
-                   
-                    survivalLinks[0].Click();
-                    await Task.Delay(3000);
-
-                   
-                    var downloadLinks = driver.FindElements(By.XPath("//a[contains(@href, '.txt')]"));
-                    if (downloadLinks.Count == 0)
-                    {
-                        Console.WriteLine("No .txt download link found on survival data page.");
-                        driver.Navigate().Back();
-                        await Task.Delay(2000);
-                        continue;
-                    }
-
-                    string fileUrl = downloadLinks[0].GetAttribute("href");
-                    string fileName = Path.GetFileName(fileUrl);
-                    string filePath = Path.Combine(downloadDirectory, fileName);
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        await DownloadFile(client, fileUrl, filePath);
-                        await UploadFileToMinIO(filePath);
-                    }
-                    Console.WriteLine($"Downloaded and uploaded: {fileName}");
-
-                    
-                    driver.Navigate().Back();
-                    await Task.Delay(2000);
-                }
-            }
+            string objectName = "TCGA_clinical_survival_data.tsv";
+            await UploadFileToMinIO(localFilePath, objectName);
         }
 
 
         // Merge clinical data with gene expression data in MongoDB
         public async Task MergeClinicalWithGeneExpressionAsync(MongoService mongoService)
         {
-            
-            var clinicalFileNames = await ListClinicalFilesInMinIO();
+            const string fileName = "TCGA_clinical_survival_data.tsv";
 
-          
-            var allClinicalDicts = new List<Dictionary<string, ClinicalSurvival>>();
-            foreach (var fileName in clinicalFileNames)
-            {
-                var localPath = await DownloadClinicalFileFromMinIO(fileName);
-                var dict = TsvParser.ParseClinicalData(localPath);
-                allClinicalDicts.Add(dict);
-            }
-            var mergedClinicalDict = new Dictionary<string, ClinicalSurvival>();
-            foreach (var dict in allClinicalDicts)
-            {
-                foreach (var kvp in dict)
-                {
-                    
-                    mergedClinicalDict[kvp.Key] = kvp.Value;
-                }
-            }
+            // Download from MinIO
+            var localPath = await DownloadClinicalFileFromMinIO(fileName);
 
+            // Parse clinical data
+            var clinicalData = TsvParser.ParseClinicalData(localPath);
 
-            
+            // Get all gene expressions
             var allGeneExpr = await mongoService.GetGeneExpressionsAsync();
 
-       
+            // Join and update
             foreach (var expr in allGeneExpr)
             {
-                var barcode = expr.PatientId.Trim().ToUpper();
-                if (mergedClinicalDict.TryGetValue(barcode, out var clinical))
+                var barcodeParts = expr.PatientId.Trim().ToUpper().Split('-');
+                var baseBarcode = string.Join("-", barcodeParts.Take(3));
+                if (clinicalData.TryGetValue(baseBarcode, out var clinical))
                     expr.Clinical = clinical;
             }
+
             await mongoService.UpdateClinicalDataAsync(allGeneExpr);
-
-            Console.WriteLine("Clinical data successfully merged and updated in MongoDB.");
+            Console.WriteLine("Merged clinical data using consolidated file");
         }
 
-
-        private async Task DownloadFile(HttpClient client, string fileUrl, string filePath)
+        // Upload file to MinIO with optional custom object name
+        public async Task UploadFileToMinIO(string filePath, string objectName = null)
         {
-            client.Timeout = TimeSpan.FromMinutes(15);
-            using (var response = await client.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead))
-            {
-                response.EnsureSuccessStatusCode();
-                using (var fs = new FileStream(filePath, FileMode.Create))
-                {
-                    await response.Content.CopyToAsync(fs);
-                }
-            }
-        }
-
-        private async Task UploadFileToMinIO(string filePath)
-        {
-            string objectName = Path.GetFileName(filePath);
+            objectName ??= Path.GetFileName(filePath);
             await _minioClient.PutObjectAsync(new PutObjectArgs()
-                .WithBucket(_bucketName) 
+                .WithBucket(_bucketName)
                 .WithObject(objectName)
                 .WithFileName(filePath)
                 .WithObjectSize(new FileInfo(filePath).Length)
@@ -183,16 +106,6 @@ namespace WpfAppScraper.Services
             }
         }
 
-        private async Task<List<string>> ListClinicalFilesInMinIO()
-        {
-            var fileNames = new List<string>();
-            await _minioClient.ListObjectsAsync(new ListObjectsArgs()
-                .WithBucket(_bucketName)
-                .WithRecursive(true))
-                .ForEachAsync(item => fileNames.Add(item.Key));
-            return fileNames;
-        }
-
         private async Task<string> DownloadClinicalFileFromMinIO(string fileName)
         {
             var localPath = Path.Combine(downloadDirectory, fileName);
@@ -203,7 +116,8 @@ namespace WpfAppScraper.Services
                 .WithCallbackStream(stream => stream.CopyTo(fs)));
             return localPath;
         }
-
-
     }
 }
+
+    
+

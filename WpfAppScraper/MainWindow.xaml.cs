@@ -1,9 +1,27 @@
-﻿using System;
+﻿using LiveCharts;
+using LiveCharts.Wpf;
+using LiveCharts.Wpf.Charts.Base;
+using Microsoft.Win32;
+using Minio;
+using Minio.DataModel.Args;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series;
+using System;
+using System;
 using System.Collections.Generic;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -12,25 +30,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using WpfAppScraper.Models;
-using WpfAppScraper.Services;
-using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
-using LiveCharts;
-using LiveCharts.Wpf;
-using OxyPlot;
-using LiveCharts.Wpf.Charts.Base;
-using OxyPlot.Axes;
-using OxyPlot.Series;
-using AxisPosition = OxyPlot.Axes.AxisPosition;
-using Microsoft.Win32;
 using WpfAppScraper.Helpers;
+using WpfAppScraper.Models;
 using WpfAppScraper.Models.Constraints;
-using MongoDB.Bson;
+using WpfAppScraper.Services;
+using AxisPosition = OxyPlot.Axes.AxisPosition;
 
 namespace WpfAppScraper
 {
@@ -207,69 +211,22 @@ namespace WpfAppScraper
 
         private async void btnImportClinical_Click(object sender, RoutedEventArgs e)
         {
-            var openDialog = new OpenFileDialog
-            {
-                Filter = "Tab-Delimited Files (*.tsv;*.txt)|*.tsv;*.txt",
-                Title = "Select Clinical Survival Data File"
-            };
-
-            if (openDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    SetUIState(false);
-                    txtLog.AppendText("Starting clinical data import...\n");
-
-                    
-                    var clinicalData = TsvParser.ParseClinicalData(openDialog.FileName);
-                    txtLog.AppendText($"Parsed {clinicalData.Count} clinical records\n");
-
-                    
-                    int matchedRecords = 0;
-                    foreach (var expression in _geneExpressions)
-                    {
-                       
-                        
-                        var basePatientId = expression.PatientId.Trim().ToUpper();
+            
 
 
-                        if (clinicalData.TryGetValue(basePatientId, out var clinical))
-                        {
-                            expression.Clinical = clinical;
-                            matchedRecords++;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"No clinical match for {basePatientId}");
-                        }
-                    }
-                    txtLog.AppendText($"Matched clinical data for {matchedRecords} patients\n");
 
-                 
-                    await _mongoService.UpdateClinicalDataAsync(_geneExpressions);
-                    txtLog.AppendText("Successfully updated clinical data in database\n");
 
-                    
-                    if (PatientDropdown.SelectedItem != null)
-                    {
-                        UpdateClinicalInfo(PatientDropdown.SelectedItem.ToString());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    txtLog.AppendText($"Error importing clinical data: {ex.Message}\n");
-                }
-                finally
-                {
-                    SetUIState(true);
-                }
-            }
         }
+
+
+ 
+
+
+
 
         private void SetUIState(bool enabled)
         {
             btnDownloadData.IsEnabled = enabled;
-            btnImportClinical.IsEnabled = enabled;
             progressBar.Visibility = enabled ? Visibility.Collapsed : Visibility.Visible;
         }
 

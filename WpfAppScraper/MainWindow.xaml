@@ -26,8 +26,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16" Grid.ColumnSpan="2">
                         <Button x:Name="btnDownloadData" Content="Download &amp; Process TCGA Data"
                                 Click="btnDownloadData_Click" Width="220" Height="40" Margin="0,0,12,0"/>
-                        <Button x:Name="btnImportClinical" Content="Import gene expression files"
-                                Click="btnImportClinical_Click" Width="180" Height="40"  Margin="0,0,12,0"/>
+               
                         <Button x:Name="btnClinicalData" Content="Import Clinical data"
                                 Click="btnClinicalData_Click" Width="200" Height="40" Margin="0,0,12,0"/>
 
